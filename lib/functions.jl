@@ -9,6 +9,7 @@ function extrema(X, extrema_type=:both)
 
     Z1 = X2.*X1[1:n-2]
     Z2 = X2.*X1[2:n-1]
+
     E = zeros(Int, n-2)
 
     if extrema_type == :peaks
@@ -22,7 +23,7 @@ function extrema(X, extrema_type=:both)
     return [false, E..., false]
 end
 
-function sum_bin(X :: Vector, bins :: Int)
+function bin_sum(X :: Vector, bins :: Int)
     parts = int(round(linspace(1, length(X), bins+1)))
     map(i -> sum(X[parts[i]:parts[i+1]]), 1:bins)
 end

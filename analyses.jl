@@ -5,45 +5,42 @@ include("lib/pyfilters.jl")
 using DataFrames
 using PyPlot
 
-function peak_count(samples)
-   sum(extrema(samples))
-end
-
 sz = seizures()
 
-sz = addcol((b, a) -> b - a,
-            (:offset, :onset),
-            sz, :length)
-sz = addcol((a, b, l) -> (a-l):(b+l),
-            (:onset, :offset, :length),
-            sz, :range)
-print(sz)
-good_sz = []
-sz = sz[5:7, :] # Only patient 2
+sz[:length] = new_col(Int, (b, a) -> b - a,
+                      sz[:, [:offset, :onset]])
 
-b = loadfilter("filt0842")
-filtr(x) = filtfilt(b, x)
-isdefined(:dat) ||
-@time (dat = addcol((a,b,c,d) -> each_col(filtr,
-                                    get_samples(a, b, c, 1:3, d)),
-                              (:patient, :patient_id, :hour, :range),
-                              sz, :data))
-#########
-# STEPS #
-#########
 
-# Find peaks & troughs
-peaks = each_sz(samples -> each_col(extrema, samples),
-                (:data,), dat, :peaks)
+sz[:range] = new_col(Range1{Int64}, (a, b, l) -> (a-l):(b+l),
+                     sz[:, [:onset, :offset, :length]])
 
-# Find simultaneous peaks
-find_simul(p) =
-    p[1].data & p[2].data & p[3].data
+good_recs = [2, 17, 16,3, 13, 15, 12, 4, 6, 7, 8, 20, 10, 14]
+sz = sz[rowindices(x -> (x[:patient] in good_recs), sz), :]
 
-simul = each_sz(find_simul, (:peaks,), peaks, :simul)
-println(simul)
+coeffs = loadfilter("filt0842")
+function analyze(patient, patient_id, hour, range)
+    X  = get_samples(patient, patient_id, hour, 1:3, range)
+    X1 = each_col(C -> filtfilt(coeffs, C), X)
+    P  = each_col(extrema, X1)
+    S  = P[1].data & P[2].data & P[3].data
+    bins =  bin_sum(S, 6)
+end
 
-# Bin peaks into 6 bins
-counts = each_sz(p -> sum_bin(p, 6),
-             (:simul,), simul, :counts)
+if ~isdefined(:redo) || ~redo
+    results = Vector{Int}[]
+
+    for s in eachrow(sz)
+        println(s[:patient], " ", s[:hour])
+        try
+            bins = analyze([s[i] for i in
+                            [:patient, :patient_id, :hour, :range]]...)
+            push!(results, bins)
+            plt.bar([1:length(bins)],
+                    bins, color="green",
+                    alpha = 1 / length(sz))
+        catch
+            println("There was an error analyzing $(s[:patient]), hour $(s[:hour])")
+        end
+    end
+end
 
