@@ -21,7 +21,7 @@ function get_samples(patient, patient_id, hour, channels, range)
             if range.start > 0
                 df = reduce(hcat, map(read_channel, channels))
                 n = size(df, 1)
-                remaining = range.start + range.len - n-1
+                remaining = range.stop - n
                 if remaining > 0
                     df = vcat(df[range.start:n, :],
                               splice(hour+1, 1:remaining, :forward))
@@ -31,17 +31,18 @@ function get_samples(patient, patient_id, hour, channels, range)
             else
                 # range.start is negative
                 df = vcat(splice(hour-1, 0:-(range.start+1), :backward),
-                          splice(hour, 1:range.start+range.len-1, :forward))
+                          splice(hour, 1:range.stop, :forward))
             end
             
         elseif direction == :backward
             df = reduce(hcat, map(read_channel, channels))
             n = size(df, 1)
-            remaining = range.len - n
+            len = range.stop-range.start+1
+            remaining = len - n
             if remaining > 0
                 df = vcat(splice(hour-1, 0:remaining, :backward), df)
             else
-                df = df[n-range.len:n, :]
+                df = df[n-len:n, :]
             end
         end
         df
@@ -74,6 +75,10 @@ function seizures()
     if isfile(DATADIR * "/patient_meta.csv")
         meta = readtable(DATADIR * "/patient_meta.csv")
         table = join(table, meta, on=:patient)
+    end
+    if isfile(DATADIR * "/seizure_meta.csv")
+        meta = readtable(DATADIR * "/seizure_meta.csv")
+        table = hcat(table, meta)
     end
     table
 end

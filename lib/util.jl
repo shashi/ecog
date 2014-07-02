@@ -4,6 +4,7 @@ import Base.map
 
 function _apply(f :: Function, df :: DataFrame)
     args = {df[name][1] for name in names(df)}
+    if any(isna, args) return NA end
     #println(f(2))
     #println(args, f(args...))
     #println("ARGS ", length(args))
@@ -15,7 +16,7 @@ function new_col(T, f :: Function, df :: DataFrame)
     for i = 1:nrow(df)
         try
             #println("Applying $(f) to $(df[i, :])")
-            col[i] = _apply(f, df[i, :]) :: T
+            col[i] = _apply(f, df[i, :])
         catch
             #println("ERROR while applying $(f) to $(df[i, :])")
             rethrow()

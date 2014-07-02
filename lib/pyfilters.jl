@@ -5,7 +5,7 @@ using PyCall
 @pyimport scipy.signal as pysig
 
 function loadfilter(file :: String)
-    io.loadmat("lib/filt/"*file*".mat")[file][:]
+    io.loadmat("lib/filt/"*file*".mat")["Num"][:]
 end
 
 function filtfilt(b :: Vector, x :: Vector)

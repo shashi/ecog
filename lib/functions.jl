@@ -10,7 +10,7 @@ function extrema(X, extrema_type=:both)
     Z1 = X2.*X1[1:n-2]
     Z2 = X2.*X1[2:n-1]
 
-    E = zeros(Int, n-2)
+    E = zeros(Bool, n-2)
 
     if extrema_type == :peaks
         E = (X2 .< 0) & (Z1 .< 0) & (Z2 .> 0)
@@ -28,4 +28,10 @@ function bin_sum(X :: Vector, bins :: Int)
     map(i -> sum(X[parts[i]:parts[i+1]]), 1:bins)
 end
 
+function windowed(f :: Function, window :: Int, overlap :: Int, X :: Vector)
+    i = 1
+    N = length(X)
+    g(i) = f(X[i:i+window])
+    map(g, [1:(window - overlap):N-window])
+end
 
